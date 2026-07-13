@@ -15,6 +15,7 @@ from sqlalchemy import text
 from backend.db.database import Base, SessionLocal, engine
 from backend.db import models  # noqa: F401  (jadvallarni Base.metadata ga ro'yxatdan o'tkazish uchun)
 from backend.db.seed import seed_initial_data
+from backend.ai.speech_to_text import is_model_loaded
 
 app = FastAPI(
     title="Apteka Ovozli Qidiruv Tizimi (AVQT)",
@@ -52,7 +53,6 @@ async def root():
 
 @app.get("/api/v1/health")
 async def health():
-    # Whisper tekshiruvi BOSQICH 4 da qo'shiladi.
     db_connected = False
     try:
         with engine.connect() as conn:
@@ -61,4 +61,4 @@ async def health():
     except Exception:
         db_connected = False
 
-    return {"status": "ok", "whisper_loaded": False, "db_connected": db_connected}
+    return {"status": "ok", "whisper_loaded": is_model_loaded(), "db_connected": db_connected}

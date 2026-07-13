@@ -1,7 +1,7 @@
 modules = ["python-3.11", "nodejs-20"]
 [nix]
 channel = "stable-25_05"
-packages = ["cargo", "libiconv", "rustc"]
+packages = ["cargo", "ffmpeg-full", "libiconv", "rustc"]
 
 [agent]
 expertMode = true
