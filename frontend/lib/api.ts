@@ -22,6 +22,11 @@ export function clearToken(): void {
   window.localStorage.removeItem(TOKEN_KEY);
 }
 
+export function logout(): void {
+  clearToken();
+  window.location.href = "/login";
+}
+
 export interface ApiErrorPayload {
   error?: { code: string; message: string };
   detail?: { error?: { code: string; message: string } } | string;
@@ -57,13 +62,27 @@ async function parseErrorResponse(response: Response): Promise<ApiError> {
   return new ApiError("Kutilmagan xatolik yuz berdi", "UNKNOWN");
 }
 
+/**
+ * Autentifikatsiya talab qiladigan barcha so'rovlar shu funksiya orqali
+ * o'tadi: tokenni header'ga qo'shadi va agar backend 401 (token yo'q/muddati
+ * tugagan) qaytarsa, tokenni tozalab foydalanuvchini avtomatik login
+ * sahifasiga qaytaradi — bu logikani har bir sahifada alohida takrorlash
+ * shart emas.
+ */
 async function authFetch(path: string, init: RequestInit = {}): Promise<Response> {
   const token = getToken();
   const headers = new Headers(init.headers);
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }
-  return fetch(path, { ...init, headers });
+  const response = await fetch(path, { ...init, headers });
+
+  if (response.status === 401 && typeof window !== "undefined") {
+    clearToken();
+    window.location.href = "/login";
+  }
+
+  return response;
 }
 
 export interface TokenResponse {

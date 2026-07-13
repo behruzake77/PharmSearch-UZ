@@ -1,11 +1,9 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
 import { login, setToken, ApiError } from "@/lib/api";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +16,9 @@ export default function LoginPage() {
     try {
       const { access_token } = await login(username, password);
       setToken(access_token);
-      router.push("/");
+      // To'liq sahifa yuklanishi (router.push o'rniga) — shunda NavBar
+      // kabi umumiy layout komponentlari yangi tokenni darhol ko'radi.
+      window.location.href = "/";
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Kirishda xatolik yuz berdi");
     } finally {
