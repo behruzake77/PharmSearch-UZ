@@ -1,113 +1,106 @@
-/**
- * Backend (FastAPI) bilan ishlash uchun yordamchi funksiyalar.
- *
- * Token hozircha localStorage'da saqlanadi (loyiha kichik bo'lgani uchun
- * sodda yechim yetarli — BOSQICH 9'da to'liq autentifikatsiya oqimi bilan
- * qattiqlashtiriladi: avtomatik redirect, har bir so'rovga header qo'shish
- * markazlashtirilgan holda, va h.k.)
- */
+"use client";
 
-const TOKEN_KEY = "avqt_token";
-
-export function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(TOKEN_KEY);
-}
-
-export function setToken(token: string): void {
-  window.localStorage.setItem(TOKEN_KEY, token);
-}
-
-export function clearToken(): void {
-  window.localStorage.removeItem(TOKEN_KEY);
-}
-
-export function logout(): void {
-  clearToken();
-  window.location.href = "/login";
-}
-
-export interface ApiErrorPayload {
-  error?: { code: string; message: string };
-  detail?: { error?: { code: string; message: string } } | string;
-}
+const API_BASE_URL = "/api/v1";
 
 export class ApiError extends Error {
-  code: string;
-
-  constructor(message: string, code: string) {
+  constructor(
+    public code: string,
+    public message: string,
+    public statusCode: number
+  ) {
     super(message);
-    this.code = code;
+    this.name = "ApiError";
   }
 }
 
-async function parseErrorResponse(response: Response): Promise<ApiError> {
-  let payload: ApiErrorPayload | null = null;
-  try {
-    payload = await response.json();
-  } catch {
-    // javob JSON emas — umumiy xabar bilan davom etamiz
-  }
-
-  const detail = payload?.detail;
-  if (detail && typeof detail === "object" && detail.error) {
-    return new ApiError(detail.error.message, detail.error.code);
-  }
-  if (payload?.error) {
-    return new ApiError(payload.error.message, payload.error.code);
-  }
-  if (typeof detail === "string") {
-    return new ApiError(detail, "UNKNOWN");
-  }
-  return new ApiError("Kutilmagan xatolik yuz berdi", "UNKNOWN");
+interface ErrorResponse {
+  error?: {
+    code: string;
+    message: string;
+  };
+  detail?: string;
 }
 
-/**
- * Autentifikatsiya talab qiladigan barcha so'rovlar shu funksiya orqali
- * o'tadi: tokenni header'ga qo'shadi va agar backend 401 (token yo'q/muddati
- * tugagan) qaytarsa, tokenni tozalab foydalanuvchini avtomatik login
- * sahifasiga qaytaradi — bu logikani har bir sahifada alohida takrorlash
- * shart emas.
- */
-async function authFetch(path: string, init: RequestInit = {}): Promise<Response> {
-  const token = getToken();
-  const headers = new Headers(init.headers);
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
-  const response = await fetch(path, { ...init, headers });
+async function handleResponse<T>(response: Response): Promise<T> {
+  const contentType = response.headers.get("content-type");
+  let data: ErrorResponse | T;
 
-  if (response.status === 401 && typeof window !== "undefined") {
-    clearToken();
-    window.location.href = "/login";
+  if (contentType?.includes("application/json")) {
+    data = await response.json();
+  } else {
+    data = (await response.text()) as any;
   }
 
-  return response;
+  if (!response.ok) {
+    const errorData = data as ErrorResponse;
+    const code = errorData.error?.code || "UNKNOWN_ERROR";
+    const message =
+      errorData.error?.message || errorData.detail || "An error occurred";
+    throw new ApiError(code, message, response.status);
+  }
+
+  return data as T;
+}
+
+// ============ Auth ============
+
+export interface CurrentUser {
+  id: number;
+  username: string;
+  full_name: string;
+  role: "admin" | "pharmacist";
+  pharmacy_id: number | null;
 }
 
 export interface TokenResponse {
   access_token: string;
-  token_type: string;
+  user: CurrentUser;
 }
 
-export async function login(username: string, password: string): Promise<TokenResponse> {
-  const response = await fetch("/api/v1/auth/login", {
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export async function login(credentials: LoginRequest): Promise<TokenResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify(credentials),
   });
-  if (!response.ok) {
-    throw await parseErrorResponse(response);
-  }
-  return response.json();
+  const data = await handleResponse<TokenResponse>(response);
+  localStorage.setItem("token", data.access_token);
+  return data;
 }
+
+export async function getMe(): Promise<CurrentUser> {
+  const token = getToken();
+  if (!token) throw new ApiError("NO_TOKEN", "No auth token found", 401);
+
+  const response = await fetch(`${API_BASE_URL}/auth/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return handleResponse<CurrentUser>(response);
+}
+
+export function logout(): void {
+  localStorage.removeItem("token");
+  window.location.href = "/login";
+}
+
+export function getToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("token");
+}
+
+// ============ Search ============
 
 export interface SearchResultItem {
   name: string;
   description: string | null;
   price: number | null;
   image_url: string | null;
-  source: string;
+  source: "gopharm" | "google";
 }
 
 export interface SearchResponse {
@@ -119,47 +112,44 @@ export interface SearchResponse {
   message: string | null;
 }
 
-export async function searchByText(query: string): Promise<SearchResponse> {
-  const response = await authFetch("/api/v1/search/text", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query }),
-  });
-  if (!response.ok) {
-    throw await parseErrorResponse(response);
-  }
-  return response.json();
+export interface TextSearchRequest {
+  query: string;
 }
 
-export async function searchByVoice(audioBlob: Blob): Promise<SearchResponse> {
+export async function searchByVoice(
+  audioBlob: Blob
+): Promise<SearchResponse> {
+  const token = getToken();
+  if (!token) throw new ApiError("NO_TOKEN", "Not authenticated", 401);
+
   const formData = new FormData();
   formData.append("audio_file", audioBlob, "audio.webm");
 
-  // Voice transcription can take up to 30s on CPU — use AbortController
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30_000);
+  const response = await fetch(`${API_BASE_URL}/search/voice`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
 
-  try {
-    const response = await authFetch("/api/v1/search/voice", {
-      method: "POST",
-      body: formData,
-      signal: controller.signal,
-    });
-    if (!response.ok) {
-      throw await parseErrorResponse(response);
-    }
-    return response.json();
-  } catch (err) {
-    if (err instanceof DOMException && err.name === "AbortError") {
-      throw new ApiError(
-        "So'rov vaqti tugdi. Dori nomini qisqaroq va aniqroq aytib ko'ring.",
-        "TIMEOUT"
-      );
-    }
-    throw err;
-  } finally {
-    clearTimeout(timeoutId);
-  }
+  return handleResponse<SearchResponse>(response);
+}
+
+export async function searchByText(
+  query: string
+): Promise<SearchResponse> {
+  const token = getToken();
+  if (!token) throw new ApiError("NO_TOKEN", "Not authenticated", 401);
+
+  const response = await fetch(`${API_BASE_URL}/search/text`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ query }),
+  });
+
+  return handleResponse<SearchResponse>(response);
 }
 
 export interface SearchHistoryItem {
@@ -169,11 +159,23 @@ export interface SearchHistoryItem {
   created_at: string;
 }
 
-export async function getHistory(limit = 20): Promise<SearchHistoryItem[]> {
-  const response = await authFetch(`/api/v1/search/history?limit=${limit}`);
-  if (!response.ok) {
-    throw await parseErrorResponse(response);
-  }
-  const payload = await response.json();
-  return payload.history;
+export interface SearchHistoryResponse {
+  history: SearchHistoryItem[];
+}
+
+export async function getSearchHistory(
+  limit: number = 20
+): Promise<SearchHistoryItem[]> {
+  const token = getToken();
+  if (!token) throw new ApiError("NO_TOKEN", "Not authenticated", 401);
+
+  const response = await fetch(
+    `${API_BASE_URL}/search/history?limit=${limit}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+
+  const data = await handleResponse<SearchHistoryResponse>(response);
+  return data.history;
 }
