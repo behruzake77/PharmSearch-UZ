@@ -46,6 +46,17 @@ class UserOut(UserBase):
     created_at: datetime
 
 
+class UserPublic(BaseModel):
+    """Login javobi ichida qaytariladigan qisqartirilgan foydalanuvchi ma'lumoti."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    full_name: str
+    username: str
+    role: str
+    pharmacy_id: int | None = None
+
+
 # --- SearchQuery ---
 
 class SearchQueryBase(BaseModel):
@@ -72,16 +83,6 @@ class SearchQueryOut(SearchQueryBase):
 class LoginRequest(BaseModel):
     username: str
     password: str
-
-
-class UserPublic(BaseModel):
-    """Login javobi ichida qaytariladigan qisqartirilgan foydalanuvchi ma'lumoti."""
-
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    full_name: str
-    role: str
 
 
 class TokenResponse(BaseModel):
