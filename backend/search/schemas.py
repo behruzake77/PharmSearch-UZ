@@ -16,3 +16,23 @@ class SearchResult(BaseModel):
 
 class SearchError(Exception):
     """Tashqi qidiruv xizmati (GoPharm yoki Google) javob bermaganda ko'tariladi."""
+
+
+class TextSearchRequest(BaseModel):
+    query: str
+
+
+class SearchResponse(BaseModel):
+    raw_transcript: str
+    corrected_query: str | None = None
+    confidence: float
+    results: list[SearchResult] = []
+    alternative_matches: list[str] = []
+    message: str | None = None
+
+
+class SearchHistoryItem(BaseModel):
+    id: int
+    corrected_query: str | None = None
+    result_found: bool
+    created_at: str
