@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getToken, logout } from "@/lib/api";
 
 const links = [
@@ -12,27 +12,36 @@ const links = [
 
 export default function NavBar() {
   const pathname = usePathname();
-  // Login va chiqish har doim to'liq sahifa yuklanishi (window.location.href)
-  // orqali amalga oshiriladi, shuning uchun NavBar har safar yangi tokenni
-  // (yoki uning yo'qligini) shu lazy initializer orqali to'g'ri o'qiydi —
-  // alohida effект/setState kaskadiga hojat yo'q.
-  const [loggedIn] = useState(() => typeof window !== "undefined" && Boolean(getToken()));
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+    setLoggedIn(Boolean(getToken()));
+  }, []);
 
   if (pathname === "/login") return null;
 
   return (
-    <header className="border-b border-zinc-200 bg-white">
+    <header className="sticky top-0 z-10 border-b border-zinc-200 bg-white/95 backdrop-blur-sm">
       <nav className="mx-auto flex max-w-3xl items-center justify-between px-6 py-3">
-        <span className="text-sm font-semibold text-zinc-900">AVQT</span>
-        <div className="flex items-center gap-4">
+        <Link href="/" className="flex items-center gap-2 group">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white transition group-hover:bg-blue-700">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+              <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Z" />
+              <path d="M19 11a1 1 0 1 0-2 0 5 5 0 0 1-10 0 1 1 0 1 0-2 0 7 7 0 0 0 6 6.93V20H9a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-2.07A7 7 0 0 0 19 11Z" />
+            </svg>
+          </div>
+          <span className="text-sm font-semibold text-zinc-900">AVQT</span>
+        </Link>
+
+        <div className="flex items-center gap-1">
           {links.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className={`text-sm font-medium transition ${
+              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
                 pathname === link.href
-                  ? "text-blue-600"
-                  : "text-zinc-500 hover:text-zinc-900"
+                  ? "bg-blue-50 text-blue-600"
+                  : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900"
               }`}
             >
               {link.label}
@@ -42,7 +51,7 @@ export default function NavBar() {
             <button
               type="button"
               onClick={logout}
-              className="text-sm font-medium text-zinc-500 transition hover:text-red-600"
+              className="ml-2 rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-500 transition hover:bg-red-50 hover:text-red-600"
             >
               Chiqish
             </button>

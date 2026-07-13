@@ -45,15 +45,31 @@ def search_gopharm(query: str, limit: int = 5) -> list[SearchResult]:
         logger.warning("GoPharm so'roviga javob bo'lmadi: %s", exc)
         raise SearchError("GoPharm xizmati javob bermadi") from exc
 
-    results = payload.get("results", [])[:limit]
+    # GoPharm API may wrap results in different keys
+    raw = payload.get("results") or payload.get("data") or payload.get("items") or []
+    results = raw[:limit]
 
-    return [
-        SearchResult(
+    items_out = []
+    for item in results:
+        # Prefer Uzbek international name, fall back to Russian, then category
+        intl_name = item.get("international_name_uz") or item.get("international_name")
+        category_name = (item.get("category") or {}).get("name")
+        description = intl_name or category_name
+
+        # price comes as integer (sum), convert to float
+        raw_price = item.get("price")
+        price = float(raw_price) if raw_price is not None else None
+
+        # Skip default placeholder images
+        raw_img = item.get("image_thumbnail") or ""
+        image_url = raw_img if raw_img and "default.png" not in raw_img else None
+
+        items_out.append(SearchResult(
             name=item.get("name", "Noma'lum"),
-            description=item.get("international_name") or (item.get("category") or {}).get("name"),
-            price=item.get("price"),
-            image_url=item.get("image_thumbnail"),
+            description=description,
+            price=price,
+            image_url=image_url,
             source="gopharm",
-        )
-        for item in results
-    ]
+        ))
+
+    return items_out
