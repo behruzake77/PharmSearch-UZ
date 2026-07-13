@@ -35,6 +35,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-50 px-6">
       <div className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm">
+        {/* Header */}
         <div className="mb-6 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
@@ -112,6 +113,34 @@ export default function LoginPage() {
             )}
           </button>
         </form>
+
+        {/* Default credentials hint */}
+        <div className="mt-5 rounded-lg bg-blue-50 border border-blue-100 px-4 py-3">
+          <p className="text-xs font-semibold text-blue-700 mb-1">Standart kirish ma&apos;lumotlari:</p>
+          <div className="flex flex-col gap-0.5">
+            <p className="text-xs text-blue-600">
+              <span className="font-medium">Login:</span>{" "}
+              <button
+                type="button"
+                onClick={() => setUsername("admin")}
+                className="font-mono bg-blue-100 hover:bg-blue-200 px-1.5 py-0.5 rounded transition cursor-pointer"
+              >
+                admin
+              </button>
+            </p>
+            <p className="text-xs text-blue-600">
+              <span className="font-medium">Parol:</span>{" "}
+              <button
+                type="button"
+                onClick={() => setPassword("admin123")}
+                className="font-mono bg-blue-100 hover:bg-blue-200 px-1.5 py-0.5 rounded transition cursor-pointer"
+              >
+                admin123
+              </button>
+            </p>
+          </div>
+          <p className="text-xs text-blue-500 mt-1.5">Bosing — avtomatik to&apos;ldiriladi</p>
+        </div>
       </div>
     </div>
   );
