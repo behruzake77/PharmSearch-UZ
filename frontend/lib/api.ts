@@ -134,14 +134,32 @@ export async function searchByText(query: string): Promise<SearchResponse> {
 export async function searchByVoice(audioBlob: Blob): Promise<SearchResponse> {
   const formData = new FormData();
   formData.append("audio_file", audioBlob, "audio.webm");
-  const response = await authFetch("/api/v1/search/voice", {
-    method: "POST",
-    body: formData,
-  });
-  if (!response.ok) {
-    throw await parseErrorResponse(response);
+
+  // Voice transcription can take up to 30s on CPU — use AbortController
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30_000);
+
+  try {
+    const response = await authFetch("/api/v1/search/voice", {
+      method: "POST",
+      body: formData,
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      throw await parseErrorResponse(response);
+    }
+    return response.json();
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new ApiError(
+        "So'rov vaqti tugdi. Dori nomini qisqaroq va aniqroq aytib ko'ring.",
+        "TIMEOUT"
+      );
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
   }
-  return response.json();
 }
 
 export interface SearchHistoryItem {

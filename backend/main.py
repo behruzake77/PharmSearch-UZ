@@ -16,7 +16,7 @@ from sqlalchemy import text
 from backend.db.database import Base, SessionLocal, engine
 from backend.db import models  # noqa: F401  (jadvallarni Base.metadata ga ro'yxatdan o'tkazish uchun)
 from backend.db.seed import seed_initial_data
-from backend.ai.speech_to_text import is_model_loaded
+from backend.ai.speech_to_text import is_model_loaded, preload_model
 
 app = FastAPI(
     title="Apteka Ovozli Qidiruv Tizimi (AVQT)",
@@ -39,13 +39,16 @@ app.include_router(search_router)
 
 @app.on_event("startup")
 def on_startup() -> None:
-    # Jadvallar Alembic migratsiyalari orqali yaratiladi; bu yerda faqat
-    # boshlang'ich admin/apteka yozuvi (agar hali bo'lmasa) yaratiladi.
+    # DB seed
     db = SessionLocal()
     try:
         seed_initial_data(db)
     finally:
         db.close()
+
+    # Whisper modelini startup'da SINXRON yuklash — birinchi ovozli so'rovda
+    # kechikish bo'lmasin. Model workspace cache'dan ~2-3s da yuklanadi.
+    preload_model()
 
 
 @app.get("/")
