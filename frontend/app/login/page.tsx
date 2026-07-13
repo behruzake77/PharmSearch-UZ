@@ -39,9 +39,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
       <div className="w-full max-w-md">
-        {/* Card */}
         <div className="rounded-2xl bg-white shadow-xl">
-          {/* Header */}
           <div className="border-b border-zinc-200 bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-8">
             <div className="flex items-center gap-3 mb-2">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 text-white">
@@ -65,9 +63,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
-            {/* Error */}
             {error && (
               <div className="flex items-start gap-3 rounded-lg bg-red-50 border border-red-200 p-3">
                 <svg
@@ -82,7 +78,6 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Username */}
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-zinc-700 mb-2">
                 Foydalanuvchi nomi
@@ -98,7 +93,6 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* Password */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-zinc-700 mb-2">
                 Parol
@@ -114,7 +108,6 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading || !username || !password}
@@ -150,7 +143,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Footer */}
           <div className="border-t border-zinc-200 bg-zinc-50 px-6 py-4">
             <p className="text-xs text-zinc-500 text-center">
               Demo: username=<span className="font-mono font-semibold">admin</span>, password=<span className="font-mono font-semibold">admin123</span>

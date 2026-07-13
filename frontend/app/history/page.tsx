@@ -54,7 +54,6 @@ export default function HistoryPage() {
         </p>
       </div>
 
-      {/* Error State */}
       {error && (
         <div className="flex items-start gap-3 rounded-lg bg-red-50 border border-red-200 p-4 mb-6">
           <svg
@@ -69,7 +68,6 @@ export default function HistoryPage() {
         </div>
       )}
 
-      {/* Loading State */}
       {loading && (
         <div className="space-y-3">
           {[...Array(5)].map((_, i) => (
@@ -78,7 +76,6 @@ export default function HistoryPage() {
         </div>
       )}
 
-      {/* Empty State */}
       {!loading && !error && history.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 mb-4">
@@ -99,7 +96,6 @@ export default function HistoryPage() {
         </div>
       )}
 
-      {/* History List */}
       {!loading && !error && history.length > 0 && (
         <div className="space-y-3">
           {history.map((item) => (
