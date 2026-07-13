@@ -9,6 +9,13 @@ bosqichlarda ai/ va search/ modullariga qo'shiladi.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from backend.api.auth import router as auth_router
+from sqlalchemy import text
+
+from backend.db.database import Base, SessionLocal, engine
+from backend.db import models  # noqa: F401  (jadvallarni Base.metadata ga ro'yxatdan o'tkazish uchun)
+from backend.db.seed import seed_initial_data
+
 app = FastAPI(
     title="Apteka Ovozli Qidiruv Tizimi (AVQT)",
     description="O'zbekiston aptekalari uchun ovozli dori qidiruv tizimi — backend API",
@@ -24,6 +31,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router)
+
+
+@app.on_event("startup")
+def on_startup() -> None:
+    # Jadvallar Alembic migratsiyalari orqali yaratiladi; bu yerda faqat
+    # boshlang'ich admin/apteka yozuvi (agar hali bo'lmasa) yaratiladi.
+    db = SessionLocal()
+    try:
+        seed_initial_data(db)
+    finally:
+        db.close()
+
 
 @app.get("/")
 async def root():
@@ -32,6 +52,13 @@ async def root():
 
 @app.get("/api/v1/health")
 async def health():
-    # Hozircha soddalashtirilgan holat — Whisper va DB tekshiruvlari
-    # keyingi bosqichlarda (BOSQICH 4, BOSQICH 2) qo'shiladi.
-    return {"status": "ok", "whisper_loaded": False, "db_connected": False}
+    # Whisper tekshiruvi BOSQICH 4 da qo'shiladi.
+    db_connected = False
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        db_connected = True
+    except Exception:
+        db_connected = False
+
+    return {"status": "ok", "whisper_loaded": False, "db_connected": db_connected}

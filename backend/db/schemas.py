@@ -67,6 +67,38 @@ class SearchQueryOut(SearchQueryBase):
     created_at: datetime
 
 
+# --- Auth ---
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class UserPublic(BaseModel):
+    """Login javobi ichida qaytariladigan qisqartirilgan foydalanuvchi ma'lumoti."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    full_name: str
+    role: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserPublic
+
+
+class CurrentUserOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    full_name: str
+    role: str
+    pharmacy_id: int | None = None
+
+
 # --- MedicineCache ---
 
 class MedicineCacheBase(BaseModel):
