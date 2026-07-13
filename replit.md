@@ -21,7 +21,7 @@ keyin bajariladi.
   standart python moduli). Kod `backend/` papkasida, modul-modul struktura:
   `api/`, `ai/`, `search/`, `db/`, `core/`.
 - **Frontend**: Next.js (App Router, TypeScript, Tailwind CSS), `frontend/` papkasida.
-- **Ma'lumotlar bazasi**: SQLite (SQLAlchemy orqali) — hali qo'shilmagan, BOSQICH 2 da qo'shiladi.
+- **Ma'lumotlar bazasi**: SQLite (`backend/pharmacy.db`), Alembic migratsiyalari bilan boshqariladi. Boshlang'ich migratsiya (`backend/alembic/`) ishga tushirilgan; seed skript admin foydalanuvchi va aptekani avtomatik yaratadi.
 
 ## Joriy holat (BOSQICH 1 — bajarildi)
 
@@ -33,10 +33,29 @@ keyin bajariladi.
 
 ## Loyihani ishga tushirish
 
-Ikkita workflow sozlangan va avtomatik ishga tushadi:
+### Birinchi marta sozlash (one-time bootstrap)
 
-- **Backend API** (konsol, port 8000): `uv run uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload`
-- **Start application** (webview, port 5000): `cd frontend && npm run dev`
+```bash
+bash setup.sh
+```
+
+Bu skript:
+1. `frontend/` papkasida `npm install` ni ishga tushiradi
+2. `backend/alembic.ini` orqali Alembic migratsiyalarini qo'llaydi (`pharmacy.db` yaratiladi)
+
+Keyin Replit'ning ikkita workflow'i avtomatik ishga tushadi:
+
+- **Backend API** (port 8000): `uv run uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload`
+- **Start application** (port 5000): `cd frontend && npm run dev`
+
+### Holat tekshirish
+
+```bash
+curl http://localhost:8000/api/v1/health
+# {"status":"ok","whisper_loaded":false,"db_connected":true}
+```
+
+Seed skript birinchi ishga tushganda `admin` / `admin123` foydalanuvchi va "Asosiy apteka" yozuvi yaratadi (`SEED_ADMIN_PASSWORD` muhit o'zgaruvchisi orqali parolni o'zgartirish mumkin).
 
 Frontend `NEXT_PUBLIC_API_BASE_URL` orqali backend manzilini biladi
 (`frontend/.env.local`, hozircha `http://localhost:8000`).
