@@ -5,11 +5,15 @@
   --foreground: #171717;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+@layer base {
+  body {
+    @apply bg-zinc-50 text-zinc-900;
+  }
+
+  input:disabled,
+  button:disabled {
+    @apply cursor-not-allowed;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -17,10 +21,10 @@
     --background: #0a0a0a;
     --foreground: #ededed;
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  @layer base {
+    body {
+      @apply bg-zinc-950 text-zinc-50;
+    }
+  }
 }
